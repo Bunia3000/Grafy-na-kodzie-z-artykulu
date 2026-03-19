@@ -227,3 +227,45 @@ python main.py \
 
 ---
 
+## 📏 Baseline: Proste klasyfikatory
+
+### 🧪 `benchmark_simple_classifiers.py`
+
+Skrypt do benchmarkowania prostych modeli ML na przygotowanych danych.
+
+👉 Jego celem jest sprawdzenie:
+
+* czy dane **same w sobie są separowalne**,
+* czy skomplikowane sieci NN są rzeczywiście potrzebne.
+
+---
+
+### ⚙️ Co robi skrypt
+
+Dla wybranych eksperymentów (np. `0_1 vs 3_1`, `3_1 vs 4_1`):
+
+1. **Wczytuje dane** (`1knot`, `3loops`, `StA`, `StS`)
+
+2. **Ekstrahuje proste cechy statystyczne**, m.in.:
+
+   * średnia, odchylenie standardowe
+   * percentyle (1%, 5%, 50%, 99%)
+   * norma L2
+   * wartości bezwzględne
+   * (dla `StA`) różnice między kolejnymi punktami
+   * (dla `StS`) statystyki diagonalne i poza diagonalą
+
+3. (Opcjonalnie) **przycina outliery** (`clipping 1–99%`)
+
+4. Trenuje dwa klasyczne modele:
+
+   * **Logistic Regression**
+   * **Random Forest**
+
+5. Ewaluacja:
+
+   * accuracy
+   * macro F1
+   * macierz pomyłek
+
+
