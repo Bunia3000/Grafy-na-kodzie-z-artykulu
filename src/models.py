@@ -1,6 +1,22 @@
-import tensorflow as tf
-from tensorflow.keras.layers import Input, Masking, LSTM, Dense, Bidirectional, BatchNormalization, TimeDistributed, Flatten, Conv2D, MaxPooling2D, Reshape, Permute
+from tensorflow.keras.layers import (
+    Input,
+    Masking,
+    LSTM,
+    Dense,
+    Bidirectional,
+    BatchNormalization,
+    TimeDistributed,
+    Flatten,
+    Conv2D,
+    MaxPooling2D,
+    Reshape,
+    Permute,
+    Dropout,
+    GlobalAveragePooling2D,
+)
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.models import Model
+import tensorflow as tf
 
 physical_devices = tf.config.list_physical_devices("GPU")
 if len(physical_devices) > 0:
@@ -293,6 +309,98 @@ def setup_NN2(input_shape, output_shape, hidden_activation, opt, norm):
     print("Generated NN model:")
     print(model.summary())
     return model
+
+
+def setup_CNN_STS(input_shape, output_shape, hidden_activation, opt, norm):
+    """
+    CNN designed for STS inputs.
+
+    Supports:
+    - 1knot_sts: (255, 255, 1)
+    - 3loops_sts: (3, 255, 255, 1) -> adapted to (255, 255, 3)
+    """
+    input_layer = Input(shape=input_shape)
+    x = adapt_input_for_cnn(input_layer, input_shape)
+
+    # opcjonalna normalizacja batchowa na wejściu
+    if norm:
+        x = BatchNormalization()(x)
+
+    # Block 1
+    x = Conv2D(
+        16,
+        (3, 3),
+        padding="same",
+        activation=hidden_activation,
+        kernel_regularizer=l2(1e-4),
+    )(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
+    x = Dropout(0.10)(x)
+
+    # Block 2
+    x = Conv2D(
+        32,
+        (3, 3),
+        padding="same",
+        activation=hidden_activation,
+        kernel_regularizer=l2(1e-4),
+    )(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
+    x = Dropout(0.15)(x)
+
+    # Block 3
+    x = Conv2D(
+        64,
+        (3, 3),
+        padding="same",
+        activation=hidden_activation,
+        kernel_regularizer=l2(1e-4),
+    )(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
+    x = Dropout(0.20)(x)
+
+    # Block 4
+    x = Conv2D(
+        128,
+        (3, 3),
+        padding="same",
+        activation=hidden_activation,
+        kernel_regularizer=l2(1e-4),
+    )(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
+    x = Dropout(0.25)(x)
+
+    # zamiast Flatten -> dużo lżejszy model
+    x = GlobalAveragePooling2D()(x)
+
+    x = Dense(
+        64,
+        activation=hidden_activation,
+        kernel_regularizer=l2(1e-4),
+    )(x)
+    x = Dropout(0.30)(x)
+
+    output_layer = Dense(output_shape, activation="softmax")(x)
+
+    model = Model(inputs=input_layer, outputs=output_layer)
+
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
+
+    model.compile(
+        optimizer=opt,
+        loss=loss_fn,
+        metrics=["accuracy"],
+    )
+
+    print("Generated CNN_STS model:")
+    print(model.summary())
+
+    return model
+
 
 def localise_setup_RNN(input_shape, output_shape, hidden_activation, opt, norm):
     # mask_value = -100

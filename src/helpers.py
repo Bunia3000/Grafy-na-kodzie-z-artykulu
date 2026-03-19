@@ -27,6 +27,7 @@ SUPPORTED_NETS = {
     "localiseFFNN",
     "localiseRNN",
     "randFOR",
+    "CNN_STS",
 }
 
 
@@ -96,6 +97,15 @@ def generate_model(net: str, in_layer: tuple, knots: List[str], norm: bool):
 
     elif net == "CNN":
         model = setup_CNN(
+            in_layer,
+            n_classes,
+            "relu",
+            tf.keras.optimizers.Adam(learning_rate=0.001),
+            norm,
+        )
+
+    elif net == "CNN_STS":
+        model = setup_CNN_STS(
             in_layer,
             n_classes,
             "relu",
