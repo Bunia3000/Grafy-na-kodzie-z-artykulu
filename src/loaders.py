@@ -330,6 +330,17 @@ def load_single_sample(data_root, dtype, sample_id):
     validate_array_shape(array, config["expected_shape"], sample_id)
     validate_array_values(array, sample_id)
 
+    def normalize(x):
+        mean = np.mean(x)
+        std = np.std(x)
+
+        if std < 1e-8:
+            return x  # unikamy dzielenia przez 0
+
+        return (x - mean) / std
+
+    array = normalize(array)
+
     return array
 
 
