@@ -1,155 +1,138 @@
 # 📊 Theta Graph Dataset Pipeline
 
-This folder contains a complete pipeline for constructing a machine learning dataset from spatial theta graphs (0-curves) and derived structures, as described in the referenced paper.
+Ten folder zawiera kompletny pipeline do budowy zbioru danych dla uczenia maszynowego na podstawie przestrzennych grafów theta (0-curves), zgodnie z opisem w powiązanej publikacji.
 
-The pipeline processes raw geometric data into standardized representations (`1knot`, `3loops`) and computes geometric features (`StS`, `StA`) suitable for ML models.
+Pipeline przetwarza surowe dane geometryczne do ustandaryzowanych reprezentacji (`1knot`, `3loops`) oraz oblicza cechy geometryczne (`StS`, `StA`) odpowiednie dla modeli ML.
 
 ---
 
-## 🔁 Pipeline Overview
+## 🔁 Przegląd pipeline’u
 
 ```
-Excel → raw XYZ → validation → normalization
-      → 1knot / 3loops construction
-      → resampling (256 pts)
-      → canonicalization
-      → feature computation (StS, StA)
+Excel → surowe XYZ → walidacja → normalizacja
+      → konstrukcja 1knot / 3loops
+      → resampling (256 punktów)
+      → kanonikalizacja
+      → obliczanie cech (StS, StA)
 ```
 
 ---
 
-## 📂 Scripts Description
+## 📂 Opis skryptów
 
-### 1. 📥 Data Extraction
+### 1. 📥 Ekstrakcja danych
 
-* **`extract_xyz_from_excel.py`**
-  Extracts 3D coordinates of theta graphs from Excel files and saves them as `.xyz` files (`edge_id, point_id, x, y, z`).
+**`extract_xyz_from_excel.py`**
+Ekstrahuje współrzędne 3D grafów theta z plików Excel i zapisuje je jako pliki `.xyz` (`edge_id`, `point_id`, `x`, `y`, `z`).
 
-* **`extract_xyz_from_exel_run-3.py`**
-  Variant of the above script for a different dataset (`run-3`), with additional dataset statistics.
-
----
-
-### 2. ✅ Data Validation & Diagnostics
-
-* **`validate_xyz_graphs.py`**
-  Validates structural correctness of `.xyz` graphs:
-
-  * exactly 3 edges
-  * correct `edge_id` values (0,1,2)
-  * 101 points per edge
-  * consistent indexing
-
-* **`check_xyz_geometry.py`**
-  Performs geometric sanity checks:
-
-  * detects unusually short segments
-  * identifies large jumps or discontinuities
-  * flags potentially corrupted graphs
+**`extract_xyz_from_exel_run-3.py`**
+Wariant powyższego skryptu dla innego zbioru danych (run-3), zawiera dodatkowe statystyki datasetu.
 
 ---
 
-### 3. ⚖️ Normalization
+### 2. ✅ Walidacja danych i diagnostyka
 
-* **`normalize_graphs.py`**
-  Normalizes graphs into a common reference frame:
+**`validate_xyz_graphs.py`**
+Sprawdza poprawność strukturalną grafów `.xyz`:
 
-  * centers graph at origin
-  * scales vertex distance to 1
-  * aligns main axis with Z-axis
+* dokładnie 3 krawędzie
+* poprawne wartości `edge_id` (0, 1, 2)
+* 101 punktów na każdą krawędź
+* spójne indeksowanie
 
-This ensures geometric consistency across the dataset.
+**`check_xyz_geometry.py`**
+Wykonuje testy geometryczne:
+
+* wykrywa nietypowo krótkie segmenty
+* identyfikuje duże skoki i nieciągłości
+* oznacza potencjalnie uszkodzone grafy
 
 ---
 
-### 4. 🔗 Graph Transformations
+### 3. ⚖️ Normalizacja
 
-* **`build_1knot_xyz.py`**
-  Converts a theta graph into a single closed curve (`1knot`) by concatenating edges.
-  Output: ~299-point curve.
+**`normalize_graphs.py`**
+Normalizuje grafy do wspólnego układu odniesienia:
 
-* **`build_3loops_xyz.py`**
-  Constructs three loops (`3loops`) from edge pairs:
+* centruje graf w początku układu (0,0,0)
+* skaluje odległość między wierzchołkami do 1
+* wyrównuje główną oś do osi Z
 
-  * (0,1), (0,2), (1,2)
-    Each loop is a closed curve (~201 points).
+Zapewnia to spójność geometryczną w całym zbiorze danych.
+
+---
+
+### 4. 🔗 Transformacje grafów
+
+**`build_1knot_xyz.py`**
+Przekształca graf theta w jedną zamkniętą krzywą (`1knot`) przez konkatenację krawędzi.
+Wyjście: ~299 punktów.
+
+**`build_3loops_xyz.py`**
+Tworzy trzy pętle (`3loops`) z par krawędzi:
+
+* (0,1), (0,2), (1,2)
+  Każda pętla to zamknięta krzywa (~201 punktów).
 
 ---
 
 ### 5. 🔄 Resampling
 
-* **`resample_1knot_xyz_256.py`**
-  Resamples `1knot` curves to **256 points** using arc-length interpolation.
+**`resample_1knot_xyz_256.py`**
+Resampluje krzywe `1knot` do 256 punktów z użyciem interpolacji długości łuku.
 
-* **`resample_3loops_xyz_256.py`**
-  Resamples each loop in `3loops` to **256 points**.
+**`resample_3loops_xyz_256.py`**
+Resampluje każdą pętlę w `3loops` do 256 punktów.
 
-This step standardizes input size for ML models.
-
----
-
-### 6. 🧭 Canonicalization
-
-* **`canonicalize_1knot_xyz_256.py`**
-  Removes ambiguity in curve representation by:
-
-  * selecting canonical starting point
-  * fixing traversal direction
-
-* **`canonicalize_3loops_xyz_256.py`**
-  Canonicalizes:
-
-  * each loop individually
-  * ordering of the three loops
-
-Ensures identical graphs have identical representations.
+Ten krok ujednolica rozmiar wejścia dla modeli ML.
 
 ---
 
-### 7. 🧠 Feature Computation
+### 6. 🧭 Kanonikalizacja
 
-* **`compute_1knot_sts_sta.py`**
-  Computes geometric features for `1knot`:
+**`canonicalize_1knot_xyz_256.py`**
+Usuwa niejednoznaczność reprezentacji krzywej poprzez:
 
-  * `StS` — segment-to-segment interaction matrix
-  * `StA` — segment-based feature vector
+* wybór kanonicznego punktu początkowego
+* ustalenie kierunku przejścia
 
-* **`compute_3loops_sts_sta.py`**
-  Computes `StS` and `StA` separately for each loop in `3loops`, producing ML-ready tensors.
+**`canonicalize_3loops_xyz_256.py`**
+Kanonikalizuje:
 
----
+* każdą pętlę osobno
+* kolejność trzech pętli
 
-## 📌 Key Concepts
-
-* **Theta graph (0-curve):**
-  Two vertices connected by three edges.
-
-* **1knot:**
-  Single closed curve derived from all edges.
-
-* **3loops:**
-  Three closed curves built from edge pairs.
-
-* **StS / StA:**
-  Geometric descriptors based on segment interactions and orientations.
+Zapewnia, że identyczne grafy mają identyczne reprezentacje.
 
 ---
 
-## 🎯 Output
+### 7. 🧠 Obliczanie cech
 
-The pipeline produces:
+**`compute_1knot_sts_sta.py`**
+Oblicza cechy geometryczne dla `1knot`:
 
-* standardized `.xyz` representations
-* resampled curves (256 points)
-* canonical graph encodings
-* feature files (`.npy`, `.txt`) ready for ML
+* **StS** — macierz interakcji segment–segment
+* **StA** — wektor cech segmentowych
+
+**`compute_3loops_sts_sta.py`**
+Oblicza StS i StA osobno dla każdej pętli w `3loops`, tworząc tensory gotowe do ML.
 
 ---
 
-## 🚀 Usage Notes
+## 📌 Kluczowe pojęcia
 
-* Run scripts in pipeline order
-* Ensure intermediate directories exist
-* Validate data before normalization
-* Canonicalization is critical for dataset consistency
+* **Theta graph (0-curve)**: dwa wierzchołki połączone trzema krawędziami
+* **1knot**: pojedyncza zamknięta krzywa utworzona ze wszystkich krawędzi
+* **3loops**: trzy zamknięte krzywe zbudowane z par krawędzi
+* **StS / StA**: deskryptory geometryczne oparte na interakcjach i orientacjach segmentów
 
+---
+
+## 🎯 Wynik
+
+Pipeline generuje:
+
+* ustandaryzowane reprezentacje `.xyz`
+* krzywe po resamplingu (256 punktów)
+* kanoniczne reprezentacje grafów
+* pliki cech (`.npy`, `.txt`) gotowe do ML
